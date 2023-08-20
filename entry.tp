@@ -1,0 +1,111 @@
+{
+  "sdk": 6,
+  "version": 100,
+  "name": "Sound Recorder",
+  "id": "gitago.soundrecorder",
+  "configuration": {
+    "colorDark": "#222423",
+    "colorLight": "#1D9BF0",
+    "parentCategory": "audio"
+  },
+  "plugin_start_cmd_windows": "%TP_PLUGIN_FOLDER%SoundBytes\\soundbytes.exe",
+  "categories": [
+    {
+      "id": "gitago.soundrecorder.main",
+      "name": "Sound Recorder",
+      "imagepath": "%TP_PLUGIN_FOLDER%Sound_Recorder\\Sound_Icon_26px.png",
+      "actions": [
+        {
+          "id": "gitago.soundrecorder.act.start_recording",
+          "name": "Start Recording",
+          "prefix": "Prefix",
+          "type": "communicate",
+          "description": "Start recording audio",
+          "format": "Start recording audio from Device: {$gitago.soundrecorder.act.start_recording.device$}",
+          "tryInline": true,
+          "data": [
+            {
+              "id": "gitago.soundrecorder.act.start_recording.device",
+              "type": "choice",
+              "label": "Select Input Device",
+              "default": "",
+              "valueChoices": []
+            }
+          ]
+        },
+        {
+          "id": "gitago.soundrecorder.act.stop_recording",
+          "name": "Stop Recording",
+          "prefix": "Prefix",
+          "type": "communicate",
+          "description": "Stop recording audio",
+          "format": "Stop recording audio from Device: {$gitago.soundrecorder.act.stop_recording.device$}",
+          "tryInline": true,
+          "data": [
+            {
+              "id": "gitago.soundrecorder.act.stop_recording.device",
+              "type": "choice",
+              "label": "Select Input Device",
+              "default": "",
+              "valueChoices": []
+            }
+          ]
+        },
+        {
+          "id": "gitago.soundrecorder.act.save_audio",
+          "name": "Save Audio",
+          "prefix": "Prefix",
+          "type": "communicate",
+          "description": "Save recorded audio",
+          "format": "Save recorded audio from Device: {$gitago.soundrecorder.act.save_audio.device$} for Duration: {$gitago.soundrecorder.act.save_audio.duration$} seconds with Filename: {$gitago.soundrecorder.act.save_audio.filename$}",
+          "tryInline": true,
+          "data": [
+            {
+              "id": "gitago.soundrecorder.act.save_audio.device",
+              "type": "choice",
+              "label": "Select Input Device",
+              "default": "",
+              "valueChoices": []
+            },
+            {
+              "id": "gitago.soundrecorder.act.save_audio.duration",
+              "type": "text",
+              "label": "Recording Duration (seconds)",
+              "default": "10"
+            },
+            {
+              "id": "gitago.soundrecorder.act.save_audio.filename",
+              "type": "text",
+              "label": "Filename",
+              "default": "filename.wav"
+            }
+          ]
+        }
+      ],
+      "states": [
+        {
+          "id": "gitago.soundrecorder.state.active_recording_devices",
+          "type": "text",
+          "desc": "Active Recording Devices",
+          "default": "0"
+        }
+      ],
+      "events": [],
+      "connectors": []
+    }
+  ],
+  "settings": [
+    {
+      "name": "Max Pre-Record Time (seconds)",
+      "type": "text",
+      "default": "30",
+      "readOnly": false
+    },
+    {
+      "name": "Debug Mode",
+      "type": "text",
+      "default": "off",
+      "readOnly": false
+    }
+  ]
+}
