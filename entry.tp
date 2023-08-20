@@ -1,14 +1,16 @@
 {
   "sdk": 6,
   "version": 100,
-  "name": "Sound Recorder",
+  "name": "SoundBytes",
   "id": "gitago.soundrecorder",
   "configuration": {
     "colorDark": "#222423",
     "colorLight": "#1D9BF0",
     "parentCategory": "audio"
   },
-  "plugin_start_cmd_windows": "%TP_PLUGIN_FOLDER%SoundBytes\\soundbytes.exe",
+  "plugin_start_cmd_windows": "%TP_PLUGIN_FOLDER%SoundBytes\\SoundBytes.exe",
+  "plugin_start_cmd_linux": "sh %TP_PLUGIN_FOLDER%SoundBytes//start.sh SoundBytes",
+  "plugin_start_cmd_mac": "sh %TP_PLUGIN_FOLDER%SoundBytes//start.sh SoundBytes",
   "categories": [
     {
       "id": "gitago.soundrecorder.main",
@@ -21,9 +23,20 @@
           "prefix": "Prefix",
           "type": "communicate",
           "description": "Start recording audio",
-          "format": "Start recording audio from Device: {$gitago.soundrecorder.act.start_recording.device$}",
+          "format": "Start recording audio on Channel {$gitago.soundrecorder.act.start_recording.channel$} from Device: {$gitago.soundrecorder.act.start_recording.device$}",
           "tryInline": true,
           "data": [
+            {
+              "id": "gitago.soundrecorder.act.start_recording.channel",
+              "type": "choice",
+              "label": "Channel",
+              "default": "1",
+              "valueChoices": [
+                "1",
+                "2",
+                "3"
+              ]
+            },
             {
               "id": "gitago.soundrecorder.act.start_recording.device",
               "type": "choice",
@@ -39,15 +52,19 @@
           "prefix": "Prefix",
           "type": "communicate",
           "description": "Stop recording audio",
-          "format": "Stop recording audio from Device: {$gitago.soundrecorder.act.stop_recording.device$}",
+          "format": "Stop recording audio on Channel: {$gitago.soundrecorder.act.stop_recording.channel$}",
           "tryInline": true,
           "data": [
             {
-              "id": "gitago.soundrecorder.act.stop_recording.device",
+              "id": "gitago.soundrecorder.act.stop_recording.channel",
               "type": "choice",
               "label": "Select Input Device",
               "default": "",
-              "valueChoices": []
+              "valueChoices": [
+                "1",
+                "2",
+                "3"
+              ]
             }
           ]
         },
@@ -57,11 +74,11 @@
           "prefix": "Prefix",
           "type": "communicate",
           "description": "Save recorded audio",
-          "format": "Save recorded audio from Device: {$gitago.soundrecorder.act.save_audio.device$} for Duration: {$gitago.soundrecorder.act.save_audio.duration$} seconds with Filename: {$gitago.soundrecorder.act.save_audio.filename$}",
+          "format": "Save recorded audio on Channel: {$gitago.soundrecorder.act.save_audio.channel$} for Duration: {$gitago.soundrecorder.act.save_audio.duration$} seconds with Filename: {$gitago.soundrecorder.act.save_audio.filename$}",
           "tryInline": true,
           "data": [
             {
-              "id": "gitago.soundrecorder.act.save_audio.device",
+              "id": "gitago.soundrecorder.act.save_audio.channel",
               "type": "choice",
               "label": "Select Input Device",
               "default": "",
@@ -88,6 +105,24 @@
           "type": "text",
           "desc": "Active Recording Devices",
           "default": "0"
+        },
+        {
+          "id": "gitago.soundrecorder.recording_state.Channel_1",
+          "type": "text",
+          "desc": "Recording State - Channel:1",
+          "default": "False"
+        },
+        {
+          "id": "gitago.soundrecorder.recording_state.Channel_2",
+          "type": "text",
+          "desc": "Recording State - Channel:2",
+          "default": "False"
+        },
+        {
+          "id": "gitago.soundrecorder.recording_state.Channel_3",
+          "type": "text",
+          "desc": "Recording State - Channel:3",
+          "default": "False"
         }
       ],
       "events": [],
@@ -105,6 +140,12 @@
       "name": "Debug Mode",
       "type": "text",
       "default": "off",
+      "readOnly": false
+    },
+    {
+      "name": "Audio Sample Rate",
+      "type": "text",
+      "default": "44100",
       "readOnly": false
     }
   ]

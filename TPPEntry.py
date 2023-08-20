@@ -15,7 +15,9 @@ TP_PLUGIN_INFO = {
         "colorLight": "#1D9BF0",
         "parentCategory": "audio"
     },
-    "plugin_start_cmd_windows": f"%TP_PLUGIN_FOLDER%{PLUGIN_FOLDER}\\{PLUGIN_NAME}.exe"
+    "plugin_start_cmd_windows": f"%TP_PLUGIN_FOLDER%{PLUGIN_FOLDER}\\{PLUGIN_NAME}.exe",
+    "plugin_start_cmd_linux": f"sh %TP_PLUGIN_FOLDER%{PLUGIN_FOLDER}//start.sh {PLUGIN_NAME}",
+    "plugin_start_cmd_mac": f"sh %TP_PLUGIN_FOLDER%{PLUGIN_FOLDER}//start.sh {PLUGIN_NAME}",
 }
 
 TP_PLUGIN_SETTINGS = {   
@@ -32,6 +34,12 @@ TP_PLUGIN_SETTINGS = {
       "default": "off",
       "readOnly": False
     },
+    "3": {
+      "name": "Audio Sample Rate",
+      "type": "text",
+      "default": "44100",
+      "readOnly": False
+    }
     
 }
 
@@ -52,10 +60,17 @@ TP_PLUGIN_ACTIONS = {
         "prefix": "Prefix",
         "type": "communicate",
         "description": "Start recording audio",
-        "format": "Start recording audio from Device: $[1]",
+        "format": "Start recording audio on Channel $[1] from Device: $[2]",
         "tryInline": True,
         "data": {
             "0": {
+                "id": PLUGIN_ID + ".act.start_recording.channel",
+                "type": "choice",
+                "label": "Channel",
+                "default": "1",
+                "valueChoices": ["1", "2", "3"]
+            },
+            "1": {
                 "id": PLUGIN_ID + ".act.start_recording.device",
                 "type": "choice",
                 "label": "Select Input Device",
@@ -71,15 +86,15 @@ TP_PLUGIN_ACTIONS = {
         "prefix": "Prefix",
         "type": "communicate",
         "description": "Stop recording audio",
-        "format": "Stop recording audio from Device: $[1]",
+        "format": "Stop recording audio on Channel: $[1]",
         "tryInline": True,
         "data": {
             "0": {
-                "id": PLUGIN_ID + ".act.stop_recording.device",
+                "id": PLUGIN_ID + ".act.stop_recording.channel",
                 "type": "choice",
                 "label": "Select Input Device",
                 "default": "",
-                "valueChoices": []
+                "valueChoices": ["1", "2", "3"]
             }
         },
         "category": "main"
@@ -90,11 +105,11 @@ TP_PLUGIN_ACTIONS = {
         "prefix": "Prefix",
         "type": "communicate",
         "description": "Save recorded audio",
-        "format": "Save recorded audio from Device: $[1] for Duration: $[2] seconds with Filename: $[3]",
+        "format": "Save recorded audio on Channel: $[1] for Duration: $[2] seconds with Filename: $[3]",
         "tryInline": True,
         "data": {
             "0": {
-                "id": PLUGIN_ID + ".act.save_audio.device",
+                "id": PLUGIN_ID + ".act.save_audio.channel",
                 "type": "choice",
                 "label": "Select Input Device",
                 "default": "",
@@ -126,6 +141,16 @@ TP_PLUGIN_STATES = {
         "category": "main"
     }
 }
+
+## make a loop of 3 to add recording status for 3 different channels
+for i in range(1, 4):
+    TP_PLUGIN_STATES[str(i)] = {
+        "id": PLUGIN_ID + f".recording_state.Channel_{i}",
+        "type": "text",
+        "desc": f"Recording State - Channel:{i}",
+        "default": "False",
+        "category": "main"
+    }
 
 TP_PLUGIN_EVENTS = {}
 

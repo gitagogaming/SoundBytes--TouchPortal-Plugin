@@ -2,8 +2,18 @@ import pyaudio
 import numpy as np
 from collections import deque
 from scipy.io import wavfile
-#import tkinter as tk
-#from tkinter import ttk
+import tkinter as tk
+from tkinter import ttk
+
+
+class DeviceNotFoundError(Exception):
+    pass
+
+class ChannelLimitExceededError(Exception):
+    pass
+
+class DeviceAlreadyRecordingError(Exception):
+    pass
 
 class AudioRecorderApp:
     def __init__(self):
@@ -12,7 +22,7 @@ class AudioRecorderApp:
         self.RATE = 44100
         self.RECORD_SECONDS = 10
         self.MAX_PRE_RECORD_SECONDS = 30
-        self.MAX_CHANNELS = 3
+        self.MAX_CHANNELS = 4
         self.audio_recorded_flags = [False] * self.MAX_CHANNELS  # Flags to indicate audio recorded
 
         self.p = pyaudio.PyAudio()
@@ -22,30 +32,32 @@ class AudioRecorderApp:
         self.recording_states = [False] * self.MAX_CHANNELS
         self.selected_device_indices = [None] * self.MAX_CHANNELS
 
-
+        self.device_vars = [i for i in range(self.MAX_CHANNELS)]
         self.active_recordings = {}  # Dictionary to track active recordings by device name
         self.device_name_to_index = {}
+        self.index_to_device_name = {}
 
-    def start_recording(self, device_name):
+        for i in range(self.num_input_devices):
+            device_info = self.p.get_device_info_by_index(i)
+            device_name = device_info['name']
+            self.device_name_to_index[device_name] = i
+            self.index_to_device_name[i] = device_name
+
+        self.tkinter = False
+
+    def start_recording(self, channel, device_name):
         if device_name not in self.device_name_to_index:
-            print(f"Device '{device_name}' not found in available devices.")
-            return
-        
+            raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
+
         if len(self.active_recordings) >= self.MAX_CHANNELS:
-            print("All channels are already in use.")
-            return
-        
+            raise ChannelLimitExceededError("All channels are already in use.")
+
         if device_name in self.active_recordings:
-            print(f"Device '{device_name}' is already being recorded.")
-            return
+            raise DeviceAlreadyRecordingError(f"Device '{device_name}' on channel {channel} is already being recorded.")
         
-        available_channel = next((i for i, val in enumerate(self.recording_states) if not val), None)
-        if available_channel is None:
-            print("No available channels for recording.")
-            return
-        
-        channel = available_channel
+        ## Setting the Device Names Index
         self.selected_device_indices[channel] = self.device_name_to_index[device_name]
+        
         self.recording_states[channel] = True
         self.audio_buffers[channel].clear()
         stream = self.p.open(format=self.FORMAT,
@@ -54,124 +66,128 @@ class AudioRecorderApp:
                              input=True,
                              input_device_index=self.selected_device_indices[channel],
                              frames_per_buffer=self.CHUNK,
-                             stream_callback=lambda in_data, frame_count, time_info, status: self.audio_callback(in_data, frame_count, time_info, status, channel, device_name))
-        self.active_recordings[device_name] = channel
-      #  print(f"Recording started for Device '{device_name}' on Channel {channel + 1}.")
-        return self.active_recordings
-       # self.update_button_states()
+                             stream_callback=lambda in_data, frame_count, time_info, status: self.audio_callback(in_data, frame_count, time_info, status, channel))
 
-    def stop_recording(self, device_name):
-        if device_name not in self.device_name_to_index:
-            print(f"Device '{device_name}' not found in available devices.")
-            return
+        self.active_recordings[device_name] = channel
+    #    self.update_button_states()
+        return self.active_recordings
         
-        if device_name not in self.active_recordings:
-            print(f"Device '{device_name}' is not being recorded.")
-            return
+
+    def stop_recording(self, chanNum):
+        device_name = ""
+        if self.tkinter:
+            device_name = self.device_vars[device_name].get()
+
+        ## find device name for channel number
+        device_name = self.index_to_device_name.get(self.selected_device_indices[int(chanNum)], None)
+        if device_name is None or device_name == "None":
+            raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
+        
+        if device_name not in self.device_name_to_index:
+            raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
+
+        if device_name in self.active_recordings:
+            raise DeviceAlreadyRecordingError(f"Device '{device_name}' on channel {channel} is already being recorded.")
+        
+
         
         channel = self.active_recordings[device_name]
         self.recording_states[channel] = False
-      #  print(f"Recording stopped for Device '{device_name}' on Channel {channel + 1}.")
+
         del self.active_recordings[device_name]
         return self.active_recordings
 
-    def save_recorded_audio(self, device_name, duration=10, filename = "recorded_audio"):
-        if filename == "recorded_audio":
-            filename = f"recorded_{device_name}_{duration}seconds.wav"
+    def save_recorded_audio(self, chanNum, duration=10, filename = "recorded_audio"):
+        if self.tkinter:
+            device_name = self.device_vars[device_name].get()
 
-        if device_name not in self.device_name_to_index:
-            print(f"Device '{device_name}' not found in available devices.")
-            return
-
+        device_name = self.index_to_device_name[self.selected_device_indices[int(chanNum)]]
+       
         if device_name not in self.active_recordings:
-            print(f"Device '{device_name}' is not being recorded.")
-            return
+            raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
+        
+        if filename == "recorded_audio":
+            filename = f"recorded_{device_name}_{duration}seconds"
 
         channel = self.active_recordings[device_name]
-      #  filename = f"recorded_audio_channel{device_name}.wav"
         if self.audio_buffers[channel]:
             audio_data = np.array(list(self.audio_buffers[channel]))[-int(self.RATE * duration):]
             wavfile.write(filename +".wav", self.RATE, audio_data)
-          #  print(f"Device '{device_name}' audio saved as '{filename}' (Duration: {duration} seconds).")
         else:
-            print(f"No recorded audio for Device '{device_name}' on Channel {channel + 1} to save.")
+            print(f"No recorded audio for Device '{device_name}' on Channel {channel} to save.")
 
 
 
-    def audio_callback(self, in_data, frame_count, time_info, status, channel, device_name):
+    def audio_callback(self, in_data, frame_count, time_info, status, channel):
         if self.recording_states[channel]:
             data_array = np.frombuffer(in_data, dtype=np.int16)
             self.audio_buffers[channel].extend(data_array)
         return in_data, pyaudio.paContinue
 
-   # def update_button_states(self):
-   #     # Update button states based on recording_states and recorded audio
-   #     for i, (recording_state, audio_recorded) in enumerate(zip(self.recording_states, self.audio_recorded_flags)):
-   #         if recording_state:
-   #             self.recording_buttons[i].config(state="disabled")
-   #             self.stop_buttons[i].config(state="normal")
-   #             self.save_buttons[i].config(state="disabled"  if audio_recorded else "enabled")
-   #         else:
-   #             self.recording_buttons[i].config(state="normal")
-   #             self.stop_buttons[i].config(state="disabled")
-   #             self.save_buttons[i].config(state="normal" if audio_recorded else "disabled")
-   #     self.root.after(500, self.update_button_states)  # Schedule the function to run again after 500 milliseconds
-#
-
-   #def run(self):
-   #    self.root = tk.Tk()
-   #    self.root.title("Multi-Channel Audio Recorder")
-
-   #    
-
-   #    self.frame = ttk.Frame(self.root, padding=10)
-   #    self.frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
 
 
-   #    
-   #    for i in range(self.num_input_devices):
-   #        device_info = self.p.get_device_info_by_index(i)
-   #        device_name = device_info['name']
-   #        self.device_name_to_index[device_name] = i
-
-   #    self.device_labels = [ttk.Label(self.frame, text=f"Select Input Device for Channel {i + 1}:") for i in range(self.MAX_CHANNELS)]
-   #    self.device_vars = [tk.StringVar() for _ in range(self.MAX_CHANNELS)]
-   #    self.device_dropdowns = [ttk.Combobox(self.frame, textvariable=var, state="readonly") for var in self.device_vars]
-
-   #    for i in range(self.MAX_CHANNELS):
-   #        self.device_labels[i].grid(row=2 * i, column=0, padx=10, pady=5, sticky=tk.W)
-   #        self.device_dropdowns[i]["values"] = list(self.device_name_to_index.keys())
-   #        self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)
 
 
-   #    self.duration_labels = [ttk.Label(self.frame, text=f"Recording seconds:") for i in range(self.MAX_CHANNELS)]
-   #    self.duration_vars = [tk.StringVar(value=str(self.RECORD_SECONDS)) for _ in range(self.MAX_CHANNELS)]
-   #    self.duration_entries = [ttk.Entry(self.frame, textvariable=var) for var in self.duration_vars]
 
-   #    for i in range(self.MAX_CHANNELS):
-   #     #   self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)  # Place the dropdowns in column 1
-   #        self.duration_labels[i].grid(row=2 * i, column=2, padx=10, pady=5, sticky=tk.W)  # Place the duration labels in column 3
-   #        self.duration_entries[i].grid(row=2 * i, column=3, padx=10, pady=5, sticky=tk.W)  # Place the duration entries in column 4
 
-   #    
-   #    self.recording_buttons = [ttk.Button(self.frame, text=f"Start Recording Channel {i + 1}", command=lambda i=i: self.start_recording(i)) for i in range(self.MAX_CHANNELS)]
-   #    self.stop_buttons = [ttk.Button(self.frame, text=f"Stop Recording Channel {i + 1}", command=lambda i=i: self.stop_recording(i), state="disabled") for i in range(self.MAX_CHANNELS)]
-   #    self.save_buttons = [ttk.Button(self.frame, text=f"Save Audio Channel {i + 1}", command=lambda i=i: self.save_recorded_audio(i), state="disabled") for i in range(self.MAX_CHANNELS)]
 
-   #    for i in range(self.MAX_CHANNELS):
-   #        self.recording_buttons[i].grid(row=2 * i + 1, column=0, padx=10, pady=5)
-   #        self.stop_buttons[i].grid(row=2 * i + 1, column=1, padx=10, pady=5)
-   #        self.save_buttons[i].grid(row=2 * i + 1, column=2, padx=10, pady=5)
 
-   #    self.status_label = ttk.Label(self.frame, text="Ready")
-   #    self.status_label.grid(row=2 * self.MAX_CHANNELS + 1, columnspan=3)
+    def update_button_states(self):
+        # Update button states based on recording_states and recorded audio
+        for i, (recording_state, audio_recorded) in enumerate(zip(self.recording_states, self.audio_recorded_flags)):
+            if recording_state:
+                self.recording_buttons[i].config(state="disabled")
+                self.stop_buttons[i].config(state="normal")
+                self.save_buttons[i].config(state="disabled"  if audio_recorded else "enabled")
+            else:
+                self.recording_buttons[i].config(state="normal")
+                self.stop_buttons[i].config(state="disabled")
+                self.save_buttons[i].config(state="normal" if audio_recorded else "disabled")
+        self.root.after(500, self.update_button_states)  # Schedule the function to run again after 500 milliseconds
 
-   #    self.root.mainloop()
+    def run(self):
+        self.tkinter = True
+
+        self.root = tk.Tk()
+        self.root.title("Multi-Channel Audio Recorder")  
+
+        self.frame = ttk.Frame(self.root, padding=10)
+        self.frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))    
+
+        for i in range(self.num_input_devices):
+            device_info = self.p.get_device_info_by_index(i)
+            device_name = device_info['name']
+            self.device_name_to_index[device_name] = i   
+        self.device_labels = [ttk.Label(self.frame, text=f"Select Input Device for Channel {i + 1}:") for i in range(self.MAX_CHANNELS)]
+        self.device_vars = [tk.StringVar() for _ in range(self.MAX_CHANNELS)]
+        self.device_dropdowns = [ttk.Combobox(self.frame, textvariable=var, state="readonly") for var in self.device_vars]   
+        for i in range(self.MAX_CHANNELS):
+            self.device_labels[i].grid(row=2 * i, column=0, padx=10, pady=5, sticky=tk.W)
+            self.device_dropdowns[i]["values"] = list(self.device_name_to_index.keys())
+            self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)   
+        self.duration_labels = [ttk.Label(self.frame, text=f"Recording seconds:") for i in range(self.MAX_CHANNELS)]
+        self.duration_vars = [tk.StringVar(value=str(self.RECORD_SECONDS)) for _ in range(self.MAX_CHANNELS)]
+        self.duration_entries = [ttk.Entry(self.frame, textvariable=var) for var in self.duration_vars]  
+        for i in range(self.MAX_CHANNELS):
+         #   self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)  # Place the dropdowns in column 1
+            self.duration_labels[i].grid(row=2 * i, column=2, padx=10, pady=5, sticky=tk.W)  # Place the duration labels in column 3
+            self.duration_entries[i].grid(row=2 * i, column=3, padx=10, pady=5, sticky=tk.W)  # Place the duration entries in column 4   
+
+        self.recording_buttons = [ttk.Button(self.frame, text=f"Start Recording Channel {i + 1}", command=lambda i=i: self.start_recording(i)) for i in range(self.MAX_CHANNELS)]
+        self.stop_buttons = [ttk.Button(self.frame, text=f"Stop Recording Channel {i + 1}", command=lambda i=i: self.stop_recording(i), state="disabled") for i in range(self.MAX_CHANNELS)]
+        self.save_buttons = [ttk.Button(self.frame, text=f"Save Audio Channel {i + 1}", command=lambda i=i: self.save_recorded_audio(i), state="disabled") for i in range(self.MAX_CHANNELS)]    
+        for i in range(self.MAX_CHANNELS):
+            self.recording_buttons[i].grid(row=2 * i + 1, column=0, padx=10, pady=5)
+            self.stop_buttons[i].grid(row=2 * i + 1, column=1, padx=10, pady=5)
+            self.save_buttons[i].grid(row=2 * i + 1, column=2, padx=10, pady=5)  
+        self.status_label = ttk.Label(self.frame, text="Ready")
+        self.status_label.grid(row=2 * self.MAX_CHANNELS + 1, columnspan=3)  
+        self.root.mainloop()
 
 if __name__ == "__main__":
     recorder = AudioRecorderApp()
-   # recorder.run()
+    recorder.run()
 
 
 ## signle working minus recording seconds max   import pyaudio

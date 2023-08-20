@@ -1,9 +1,7 @@
 import TouchPortalAPI
 from TouchPortalAPI import TYPES
 from TPPEntry import TP_PLUGIN_ACTIONS, TP_PLUGIN_STATES, TP_PLUGIN_EVENTS, PLUGIN_ID
-import os
-import numpy as np
-from sound_recorder import AudioRecorderApp
+from sound_recorder import AudioRecorderApp, DeviceAlreadyRecordingError, DeviceNotFoundError, ChannelLimitExceededError
 from sys import exit
 
 
@@ -14,6 +12,10 @@ from sys import exit
 ## So 10 buttons on a page.. each button places button1.wav, button2.wav etc.. 
 ## BUT if the user wants to re-record this sound, they will click a button that says "Record New Sound" and then click the button they want to re-record..
 ## this eanbled the 'save button' to be enabled and then they can save the new sound to the button..
+
+
+
+## things need changed so we have 3 states.. and then go back to how we checked for channel 0, 1, 2 when using tkiner originally.
 
 
 
@@ -57,7 +59,8 @@ class ClientInterface(TouchPortalAPI.Client):
         """
          Doing things with the settings
         """
-        soundRecorder.MAX_PRE_RECORD_SECONDS = int(self.plugin_settings.get('Max Pre-Record Time (seconds)'))
+        soundRecorder.MAX_PRE_RECORD_SECONDS = int(self.plugin_settings.get('Max Pre-Record Time (seconds)', 30))
+        soundRecorder.RATE = int(self.plugin_settings.get('Audio Sample Rate', 44100))
         self.log.info(f"Settings: Max Pre-Record Time changed to: {soundRecorder.MAX_PRE_RECORD_SECONDS}")
 
         if self.plugin_settings.get('Debug Mode').lower() == "on":
@@ -72,6 +75,10 @@ class ClientInterface(TouchPortalAPI.Client):
         self.log.info("Connected to Touch Portal")
         self.plugin_settings = self.settingsToDict(data['settings'])
         self.activateSettings()
+        
+        ## set all recording states to false
+        for i in range(1, 4):
+            plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.Channel_{i}", "False")
 
         try:
             for i in range(soundRecorder.num_input_devices):
@@ -84,6 +91,7 @@ class ClientInterface(TouchPortalAPI.Client):
         
         plugin.stateUpdate(f"{PLUGIN_ID}.state.active_recording_devices", "0")
         plugin.choiceUpdate(f"{PLUGIN_ID}.act.start_recording.device", list(soundRecorder.device_name_to_index.keys()))
+        plugin.choiceUpdate(f"{PLUGIN_ID}.act.save_audio.channel", ["1", "2", "3"])
 
 
     def onAction(self, data):
@@ -91,54 +99,66 @@ class ClientInterface(TouchPortalAPI.Client):
         action_data = data.get('data', [])
 
         if action_id == f"{PLUGIN_ID}.act.start_recording":
-            deviceName = action_data[0]['value']
-            response = soundRecorder.start_recording(deviceName)
-            if response is not None:
-                if deviceName in response:
-                    device_channel = response[deviceName]
-                    plugin.createState(f"{PLUGIN_ID}.recording_state.{deviceName}",
-                                        f"Recording State {deviceName}",
-                                        str(soundRecorder.recording_states[device_channel]),
-                                        "Recording States")
-                    self.log.info(f"Recording State for {deviceName} {soundRecorder.recording_states[device_channel]}")
-               
-                plugin.choiceUpdate(f"{PLUGIN_ID}.act.stop_recording.device", list(response.keys()))
-                plugin.choiceUpdate(f"{PLUGIN_ID}.act.save_audio.device", list(response.keys()))
+            deviceName = action_data[1]['value']
+            chanNum = action_data[0]['value']
+            try:
+                response = soundRecorder.start_recording(int(chanNum), deviceName)
+                if response is not None:
+                    if deviceName in response:
+                        device_channel = response[deviceName]
+                        plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.Channel_{chanNum}",
+                                            "True")
 
-                ## update total recording devices
-                plugin.stateUpdate(f"{PLUGIN_ID}.state.active_recording_devices", str(len(response.keys() if response is not None else "0")))
+                        self.log.info(f"Recording State for {deviceName} {soundRecorder.recording_states[device_channel]}")
 
-                self.log.info(f"Started recording for {deviceName}")
+                    ## update total recording devices
+                    plugin.stateUpdate(f"{PLUGIN_ID}.state.active_recording_devices", str(len(response.keys() if response is not None else "0")))
+
+                    self.log.info(f"Started recording for {deviceName} on Channel {chanNum} ")
+            except DeviceNotFoundError as e:
+                self.log.error(f"Not Found: {e}")
+            except DeviceAlreadyRecordingError as e:
+                self.log.error(f"Already Recording: {e}")
+            except ChannelLimitExceededError as e:
+                self.log.error(f"Channel limit exceeded: {e}")
 
 
         elif action_id == f"{PLUGIN_ID}.act.stop_recording":
-            deviceName = action_data[0]['value']
-            response = soundRecorder.stop_recording(deviceName)
-            if response is None or deviceName not in response:
-                plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.{deviceName}", "False")
-                
-            if response is not None:
+            chanNum = action_data[0]['value']
+            response = None
+            try:
+                response = soundRecorder.stop_recording(chanNum)
+            except DeviceNotFoundError as e:
+                self.log.error(f"Not Found: {e}")
+            except DeviceAlreadyRecordingError as e:
+                self.log.error(f"Already Recording: {e}")
+
+            try:
                 active_recording_devices = str(len(response.keys()))
-            else:
+            except:
                 active_recording_devices = "0"
+
+            if response and response is not None:
+                plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.Channel_{chanNum}", "False")
+                self.log.info(f"Stopped recording for {chanNum}")
 
             ## update total recording devices 
             plugin.stateUpdate(f"{PLUGIN_ID}.state.active_recording_devices", active_recording_devices)
 
-            plugin.choiceUpdate(f"{PLUGIN_ID}.act.stop_recording.device", list(response.keys() if response is not None else []))
-            plugin.choiceUpdate(f"{PLUGIN_ID}.act.save_audio.device", list(response.keys() if response is not None else []))
-
-            self.log.info(f"Stopped recording for {deviceName}")
+        
 
 
         elif action_id == f"{PLUGIN_ID}.act.save_audio":
-            deviceName = action_data[0]['value']
+            chanNum = action_data[0]['value']
             duration = int(action_data[1]['value'])  # Duration in seconds
             filename = action_data[2]['value']
 
             # Save recording logic for the device name and duration
-            soundRecorder.save_recorded_audio(deviceName, duration, filename)
-            self.log.info(f"Saved audio for {deviceName} for {duration} seconds to {filename}")
+            try:
+                soundRecorder.save_recorded_audio(chanNum, duration, filename)
+                self.log.info(f"Saved audio for {chanNum} for {duration} seconds to {filename}")
+            except DeviceNotFoundError as e:
+                self.log.error(f"Already Recording: {e}")
 
 
 
