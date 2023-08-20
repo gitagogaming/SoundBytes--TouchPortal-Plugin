@@ -37,34 +37,40 @@ jobs:
           overwrite: true
           file_glob: true
 
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
+build-macos:
+  runs-on: macos-latest
+  steps:
+    - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+    - name: Install PortAudio development headers
+      run: |
+        brew update
+        brew install portaudio
 
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pyinstaller
-          pip install pillow
-          pip3 install -r "requirements.txt"
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
 
-      - name: Build tpp using tppbuild
-        run: |
-          python3 "./build.py"
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install pyinstaller
+        pip install pillow
+        pip3 install -r "requirements.txt"
 
-      - name: Uploading tpp for macOS
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: "./*.tpp"
-          overwrite: true
-          file_glob: true
+    - name: Build tpp using tppbuild
+      run: |
+        python3 "./build.py"
+
+    - name: Uploading tpp for macOS
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: "./*.tpp"
+        overwrite: true
+        file_glob: true
+
 
   build-ubuntu:
     runs-on: ubuntu-latest
