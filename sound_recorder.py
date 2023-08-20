@@ -2,8 +2,8 @@ import pyaudio
 import numpy as np
 from collections import deque
 from scipy.io import wavfile
-import tkinter as tk
-from tkinter import ttk
+#import tkinter as tk
+#from tkinter import ttk
 
 class AudioRecorderApp:
     def __init__(self):
@@ -104,74 +104,74 @@ class AudioRecorderApp:
             self.audio_buffers[channel].extend(data_array)
         return in_data, pyaudio.paContinue
 
-    def update_button_states(self):
-        # Update button states based on recording_states and recorded audio
-        for i, (recording_state, audio_recorded) in enumerate(zip(self.recording_states, self.audio_recorded_flags)):
-            if recording_state:
-                self.recording_buttons[i].config(state="disabled")
-                self.stop_buttons[i].config(state="normal")
-                self.save_buttons[i].config(state="disabled"  if audio_recorded else "enabled")
-            else:
-                self.recording_buttons[i].config(state="normal")
-                self.stop_buttons[i].config(state="disabled")
-                self.save_buttons[i].config(state="normal" if audio_recorded else "disabled")
-        self.root.after(500, self.update_button_states)  # Schedule the function to run again after 500 milliseconds
+   # def update_button_states(self):
+   #     # Update button states based on recording_states and recorded audio
+   #     for i, (recording_state, audio_recorded) in enumerate(zip(self.recording_states, self.audio_recorded_flags)):
+   #         if recording_state:
+   #             self.recording_buttons[i].config(state="disabled")
+   #             self.stop_buttons[i].config(state="normal")
+   #             self.save_buttons[i].config(state="disabled"  if audio_recorded else "enabled")
+   #         else:
+   #             self.recording_buttons[i].config(state="normal")
+   #             self.stop_buttons[i].config(state="disabled")
+   #             self.save_buttons[i].config(state="normal" if audio_recorded else "disabled")
+   #     self.root.after(500, self.update_button_states)  # Schedule the function to run again after 500 milliseconds
+#
+
+   #def run(self):
+   #    self.root = tk.Tk()
+   #    self.root.title("Multi-Channel Audio Recorder")
+
+   #    
+
+   #    self.frame = ttk.Frame(self.root, padding=10)
+   #    self.frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
 
-    def run(self):
-        self.root = tk.Tk()
-        self.root.title("Multi-Channel Audio Recorder")
 
-        
+   #    
+   #    for i in range(self.num_input_devices):
+   #        device_info = self.p.get_device_info_by_index(i)
+   #        device_name = device_info['name']
+   #        self.device_name_to_index[device_name] = i
 
-        self.frame = ttk.Frame(self.root, padding=10)
-        self.frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+   #    self.device_labels = [ttk.Label(self.frame, text=f"Select Input Device for Channel {i + 1}:") for i in range(self.MAX_CHANNELS)]
+   #    self.device_vars = [tk.StringVar() for _ in range(self.MAX_CHANNELS)]
+   #    self.device_dropdowns = [ttk.Combobox(self.frame, textvariable=var, state="readonly") for var in self.device_vars]
 
-
-
-        
-        for i in range(self.num_input_devices):
-            device_info = self.p.get_device_info_by_index(i)
-            device_name = device_info['name']
-            self.device_name_to_index[device_name] = i
-
-        self.device_labels = [ttk.Label(self.frame, text=f"Select Input Device for Channel {i + 1}:") for i in range(self.MAX_CHANNELS)]
-        self.device_vars = [tk.StringVar() for _ in range(self.MAX_CHANNELS)]
-        self.device_dropdowns = [ttk.Combobox(self.frame, textvariable=var, state="readonly") for var in self.device_vars]
-
-        for i in range(self.MAX_CHANNELS):
-            self.device_labels[i].grid(row=2 * i, column=0, padx=10, pady=5, sticky=tk.W)
-            self.device_dropdowns[i]["values"] = list(self.device_name_to_index.keys())
-            self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)
+   #    for i in range(self.MAX_CHANNELS):
+   #        self.device_labels[i].grid(row=2 * i, column=0, padx=10, pady=5, sticky=tk.W)
+   #        self.device_dropdowns[i]["values"] = list(self.device_name_to_index.keys())
+   #        self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)
 
 
-        self.duration_labels = [ttk.Label(self.frame, text=f"Recording seconds:") for i in range(self.MAX_CHANNELS)]
-        self.duration_vars = [tk.StringVar(value=str(self.RECORD_SECONDS)) for _ in range(self.MAX_CHANNELS)]
-        self.duration_entries = [ttk.Entry(self.frame, textvariable=var) for var in self.duration_vars]
+   #    self.duration_labels = [ttk.Label(self.frame, text=f"Recording seconds:") for i in range(self.MAX_CHANNELS)]
+   #    self.duration_vars = [tk.StringVar(value=str(self.RECORD_SECONDS)) for _ in range(self.MAX_CHANNELS)]
+   #    self.duration_entries = [ttk.Entry(self.frame, textvariable=var) for var in self.duration_vars]
 
-        for i in range(self.MAX_CHANNELS):
-         #   self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)  # Place the dropdowns in column 1
-            self.duration_labels[i].grid(row=2 * i, column=2, padx=10, pady=5, sticky=tk.W)  # Place the duration labels in column 3
-            self.duration_entries[i].grid(row=2 * i, column=3, padx=10, pady=5, sticky=tk.W)  # Place the duration entries in column 4
+   #    for i in range(self.MAX_CHANNELS):
+   #     #   self.device_dropdowns[i].grid(row=2 * i, column=1, columnspan=2, padx=10, pady=5, sticky=tk.W)  # Place the dropdowns in column 1
+   #        self.duration_labels[i].grid(row=2 * i, column=2, padx=10, pady=5, sticky=tk.W)  # Place the duration labels in column 3
+   #        self.duration_entries[i].grid(row=2 * i, column=3, padx=10, pady=5, sticky=tk.W)  # Place the duration entries in column 4
 
-        
-        self.recording_buttons = [ttk.Button(self.frame, text=f"Start Recording Channel {i + 1}", command=lambda i=i: self.start_recording(i)) for i in range(self.MAX_CHANNELS)]
-        self.stop_buttons = [ttk.Button(self.frame, text=f"Stop Recording Channel {i + 1}", command=lambda i=i: self.stop_recording(i), state="disabled") for i in range(self.MAX_CHANNELS)]
-        self.save_buttons = [ttk.Button(self.frame, text=f"Save Audio Channel {i + 1}", command=lambda i=i: self.save_recorded_audio(i), state="disabled") for i in range(self.MAX_CHANNELS)]
+   #    
+   #    self.recording_buttons = [ttk.Button(self.frame, text=f"Start Recording Channel {i + 1}", command=lambda i=i: self.start_recording(i)) for i in range(self.MAX_CHANNELS)]
+   #    self.stop_buttons = [ttk.Button(self.frame, text=f"Stop Recording Channel {i + 1}", command=lambda i=i: self.stop_recording(i), state="disabled") for i in range(self.MAX_CHANNELS)]
+   #    self.save_buttons = [ttk.Button(self.frame, text=f"Save Audio Channel {i + 1}", command=lambda i=i: self.save_recorded_audio(i), state="disabled") for i in range(self.MAX_CHANNELS)]
 
-        for i in range(self.MAX_CHANNELS):
-            self.recording_buttons[i].grid(row=2 * i + 1, column=0, padx=10, pady=5)
-            self.stop_buttons[i].grid(row=2 * i + 1, column=1, padx=10, pady=5)
-            self.save_buttons[i].grid(row=2 * i + 1, column=2, padx=10, pady=5)
+   #    for i in range(self.MAX_CHANNELS):
+   #        self.recording_buttons[i].grid(row=2 * i + 1, column=0, padx=10, pady=5)
+   #        self.stop_buttons[i].grid(row=2 * i + 1, column=1, padx=10, pady=5)
+   #        self.save_buttons[i].grid(row=2 * i + 1, column=2, padx=10, pady=5)
 
-        self.status_label = ttk.Label(self.frame, text="Ready")
-        self.status_label.grid(row=2 * self.MAX_CHANNELS + 1, columnspan=3)
+   #    self.status_label = ttk.Label(self.frame, text="Ready")
+   #    self.status_label.grid(row=2 * self.MAX_CHANNELS + 1, columnspan=3)
 
-        self.root.mainloop()
+   #    self.root.mainloop()
 
 if __name__ == "__main__":
     recorder = AudioRecorderApp()
-    recorder.run()
+   # recorder.run()
 
 
 ## signle working minus recording seconds max   import pyaudio
