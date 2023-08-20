@@ -48,7 +48,6 @@ class ClientInterface(TouchPortalAPI.Client):
 
     def onSettings(self, data):
         self.log.debug(f"Connection: {data}")
-        ## pushing settings chagned to the plugin_settings variable
         self.plugin_settings = self.settingsToDict(data['values'])
 
         self.activateSettings()

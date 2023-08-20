@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 
 PLUGIN_ID = "gitago.soundrecorder"
+PLUGIN_NAME = "SoundBytes"
+PLUGIN_FOLDER = "SoundBytes"
+PLUGIN_ICON = ""
+
 TP_PLUGIN_INFO = {
     "sdk": 6,
     "version": 100,
-    "name": "Sound Recorder",
+    "name": PLUGIN_NAME,
     "id": PLUGIN_ID,
     "configuration": {
         "colorDark": "#222423",
         "colorLight": "#1D9BF0",
         "parentCategory": "audio"
     },
-    "plugin_start_cmd_windows": "%TP_PLUGIN_FOLDER%SoundBytes\\soundbytes.exe"
+    "plugin_start_cmd_windows": f"%TP_PLUGIN_FOLDER%{PLUGIN_FOLDER}\\{PLUGIN_NAME}.exe"
 }
 
 TP_PLUGIN_SETTINGS = {   
