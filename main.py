@@ -19,8 +19,6 @@ from sys import exit
 
 ## the sound_recorder.py is lokoing for the 'channel'.. IE channel 1, 2 or 3 as shown in tkinter gui.. it needs to reference the name instead
 
-TP_PATH = os.path.expandvars(r'%APPDATA%\TouchPortal\plugins\Sound_Recorder')
-
 class ClientInterface(TouchPortalAPI.Client):
     def __init__(self):
         super().__init__(self)
