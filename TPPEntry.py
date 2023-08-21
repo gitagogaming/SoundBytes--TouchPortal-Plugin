@@ -76,6 +76,13 @@ TP_PLUGIN_ACTIONS = {
                 "label": "Select Input Device",
                 "default": "",
                 "valueChoices": []
+            }, 
+            "2": {
+                "id": PLUGIN_ID + ".act.start_recording.stereo",
+                "type": "choice",
+                "label": "Mono or Stereo",
+                "default": "mono",
+                "valueChoices": ["mono", "stereo"]
             }
         },
         "category": "main"

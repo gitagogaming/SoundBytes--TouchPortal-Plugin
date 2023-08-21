@@ -43,6 +43,16 @@
               "label": "Select Input Device",
               "default": "",
               "valueChoices": []
+            },
+            {
+              "id": "gitago.soundrecorder.act.start_recording.stereo",
+              "type": "choice",
+              "label": "Mono or Stereo",
+              "default": "mono",
+              "valueChoices": [
+                "mono",
+                "stereo"
+              ]
             }
           ]
         },

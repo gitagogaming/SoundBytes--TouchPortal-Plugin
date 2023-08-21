@@ -47,7 +47,7 @@ class AudioRecorderApp:
 
         self.tkinter = False
 
-    def start_recording(self, channel, device_name):
+    def start_recording(self, channel, device_name, channels):
         if device_name not in self.device_name_to_index:
             raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
 
@@ -71,7 +71,7 @@ class AudioRecorderApp:
         self.recording_states[channel] = True
         self.audio_buffers[channel].clear()
         stream = self.p.open(format=self.FORMAT,
-                             channels=1,
+                             channels=channels,
                              rate=self.RATE,
                              input=True,
                              input_device_index=self.selected_device_indices[channel],
@@ -138,6 +138,7 @@ class AudioRecorderApp:
             data_array = np.frombuffer(in_data, dtype=np.int16)
             self.audio_buffers[channel].extend(data_array)
         return in_data, pyaudio.paContinue
+    
 
     def update_button_states(self):
         # Update button states based on recording_states and recorded audio
