@@ -23,7 +23,7 @@
           "prefix": "Prefix",
           "type": "communicate",
           "description": "Start recording audio",
-          "format": "Start recording audio on Channel {$gitago.soundrecorder.act.start_recording.channel$} from Device: {$gitago.soundrecorder.act.start_recording.device$}",
+          "format": "Start recording audio on Channel {$gitago.soundrecorder.act.start_recording.channel$} from Device: {$gitago.soundrecorder.act.start_recording.device$} using {$gitago.soundrecorder.act.start_recording.stereo$}",
           "tryInline": true,
           "data": [
             {

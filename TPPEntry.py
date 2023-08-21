@@ -60,7 +60,7 @@ TP_PLUGIN_ACTIONS = {
         "prefix": "Prefix",
         "type": "communicate",
         "description": "Start recording audio",
-        "format": "Start recording audio on Channel $[1] from Device: $[2]",
+        "format": "Start recording audio on Channel $[1] from Device: $[2] using $[3]",
         "tryInline": True,
         "data": {
             "0": {
