@@ -1,6 +1,6 @@
 {
   "sdk": 6,
-  "version": 100,
+  "version": 101,
   "name": "SoundBytes",
   "id": "gitago.soundrecorder",
   "configuration": {

@@ -7,7 +7,7 @@ PLUGIN_ICON = ""
 
 TP_PLUGIN_INFO = {
     "sdk": 6,
-    "version": 100,
+    "version": 101,
     "name": PLUGIN_NAME,
     "id": PLUGIN_ID,
     "configuration": {
