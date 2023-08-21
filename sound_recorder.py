@@ -32,6 +32,7 @@ class AudioRecorderApp:
         self.recording_states = [False] * self.MAX_CHANNELS
         self.selected_device_indices = [None] * self.MAX_CHANNELS
 
+        #self.device_vars = [i for i in range(1, self.MAX_CHANNELS+1)]
         self.device_vars = [i for i in range(self.MAX_CHANNELS)]
         self.active_recordings = {}  # Dictionary to track active recordings by device name
         self.device_name_to_index = {}
@@ -55,6 +56,14 @@ class AudioRecorderApp:
         if device_name in self.active_recordings:
             raise DeviceAlreadyRecordingError(f"Device '{device_name}' on channel {channel} is already being recorded.")
         
+
+
+       #for i in range(self.num_input_devices):
+       #    device_info = self.p.get_device_info_by_index(i)
+       #    if device_info['name'] == device_name:
+       #        self.selected_device_indices[channel] = i
+       #        break
+       
         ## Setting the Device Names Index
         self.selected_device_indices[channel] = self.device_name_to_index[device_name]
         
@@ -69,11 +78,14 @@ class AudioRecorderApp:
                              stream_callback=lambda in_data, frame_count, time_info, status: self.audio_callback(in_data, frame_count, time_info, status, channel))
 
         self.active_recordings[device_name] = channel
+        print("Active Recordings: ", self.active_recordings)
     #    self.update_button_states()
         return self.active_recordings
         
 
     def stop_recording(self, chanNum):
+        print("Active Recordings Stop: ", self.active_recordings)
+
         device_name = ""
         if self.tkinter:
             device_name = self.device_vars[device_name].get()
@@ -87,14 +99,13 @@ class AudioRecorderApp:
             raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
 
         if device_name in self.active_recordings:
-            raise DeviceAlreadyRecordingError(f"Device '{device_name}' on channel {channel} is already being recorded.")
+            try:
+                channel = self.active_recordings[device_name]
+                self.recording_states[channel] = False
+                del self.active_recordings[device_name]
+            except:
+                raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
         
-
-        
-        channel = self.active_recordings[device_name]
-        self.recording_states[channel] = False
-
-        del self.active_recordings[device_name]
         return self.active_recordings
 
     def save_recorded_audio(self, chanNum, duration=10, filename = "recorded_audio"):
@@ -102,12 +113,13 @@ class AudioRecorderApp:
             device_name = self.device_vars[device_name].get()
 
         device_name = self.index_to_device_name[self.selected_device_indices[int(chanNum)]]
-       
-        if device_name not in self.active_recordings:
-            raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
-        
+
         if filename == "recorded_audio":
             filename = f"recorded_{device_name}_{duration}seconds"
+
+        if device_name not in self.active_recordings:
+            print(f"Device '{device_name}' is not being recorded.")
+            return
 
         channel = self.active_recordings[device_name]
         if self.audio_buffers[channel]:
@@ -124,15 +136,6 @@ class AudioRecorderApp:
             self.audio_buffers[channel].extend(data_array)
         return in_data, pyaudio.paContinue
 
-
-
-
-
-
-
-
-
-
     def update_button_states(self):
         # Update button states based on recording_states and recorded audio
         for i, (recording_state, audio_recorded) in enumerate(zip(self.recording_states, self.audio_recorded_flags)):
@@ -145,6 +148,7 @@ class AudioRecorderApp:
                 self.stop_buttons[i].config(state="disabled")
                 self.save_buttons[i].config(state="normal" if audio_recorded else "disabled")
         self.root.after(500, self.update_button_states)  # Schedule the function to run again after 500 milliseconds
+#
 
     def run(self):
         self.tkinter = True

@@ -130,18 +130,17 @@ class ClientInterface(TouchPortalAPI.Client):
                 response = soundRecorder.stop_recording(chanNum)
             except DeviceNotFoundError as e:
                 self.log.error(f"Not Found: {e}")
-            except DeviceAlreadyRecordingError as e:
-                self.log.error(f"Already Recording: {e}")
 
+            print("This is response to stop recording: ", response)
             try:
                 active_recording_devices = str(len(response.keys()))
             except:
                 active_recording_devices = "0"
 
             if response and response is not None:
-                plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.Channel_{chanNum}", "False")
                 self.log.info(f"Stopped recording for {chanNum}")
 
+            plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.Channel_{chanNum}", "False")
             ## update total recording devices 
             plugin.stateUpdate(f"{PLUGIN_ID}.state.active_recording_devices", active_recording_devices)
 
