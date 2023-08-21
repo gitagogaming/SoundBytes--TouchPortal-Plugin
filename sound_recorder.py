@@ -37,6 +37,7 @@ class AudioRecorderApp:
         self.active_recordings = {}  # Dictionary to track active recordings by device name
         self.device_name_to_index = {}
         self.index_to_device_name = {}
+        self.active_streams = {}  # Dictionary to track active streams by device name
 
         for i in range(self.num_input_devices):
             device_info = self.p.get_device_info_by_index(i)
@@ -77,15 +78,13 @@ class AudioRecorderApp:
                              frames_per_buffer=self.CHUNK,
                              stream_callback=lambda in_data, frame_count, time_info, status: self.audio_callback(in_data, frame_count, time_info, status, channel))
 
+        self.active_streams[device_name] = stream
         self.active_recordings[device_name] = channel
-        print("Active Recordings: ", self.active_recordings)
     #    self.update_button_states()
         return self.active_recordings
         
 
     def stop_recording(self, chanNum):
-        print("Active Recordings Stop: ", self.active_recordings)
-
         device_name = ""
         if self.tkinter:
             device_name = self.device_vars[device_name].get()
@@ -102,6 +101,10 @@ class AudioRecorderApp:
             try:
                 channel = self.active_recordings[device_name]
                 self.recording_states[channel] = False
+                stream = self.active_streams.pop(device_name, None)
+                if stream:
+                    stream.stop_stream()
+                    stream.close()
                 del self.active_recordings[device_name]
             except:
                 raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
