@@ -80,17 +80,9 @@ class ClientInterface(TouchPortalAPI.Client):
         for i in range(1, 4):
             plugin.stateUpdate(f"{PLUGIN_ID}.recording_state.Channel_{i}", "False")
 
-        try:
-            for i in range(soundRecorder.num_input_devices):
-                device_info = soundRecorder.p.get_device_info_by_index(i)
-                device_name = device_info['name']
-                soundRecorder.device_name_to_index[device_name] = i
-        except Exception as e:
-            self.log.error(f"Error getting input devices: {e}")
-            return
-        
+    
         plugin.stateUpdate(f"{PLUGIN_ID}.state.active_recording_devices", "0")
-        plugin.choiceUpdate(f"{PLUGIN_ID}.act.start_recording.device", list(soundRecorder.device_name_to_index.keys()))
+        plugin.choiceUpdate(f"{PLUGIN_ID}.act.start_recording.device", list(soundRecorder.device_name_to_index_and_rate.keys()))
         plugin.choiceUpdate(f"{PLUGIN_ID}.act.save_audio.channel", ["1", "2", "3"])
 
 
@@ -166,7 +158,6 @@ class ClientInterface(TouchPortalAPI.Client):
                 self.log.error(f"Already Recording: {e}")
 
 
-
     def onShutdown(self, data):
         pass
 
@@ -187,3 +178,5 @@ finally:
     plugin.disconnect()
     del plugin
     exit(ret)
+
+

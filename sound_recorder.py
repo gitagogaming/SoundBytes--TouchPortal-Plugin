@@ -21,7 +21,7 @@ class AudioRecorderApp:
         self.FORMAT = pyaudio.paInt16
         self.RATE = 44100
         self.RECORD_SECONDS = 10
-        self.MAX_PRE_RECORD_SECONDS = 30
+        #self.MAX_PRE_RECORD_SECONDS = 30
         self.MAX_CHANNELS = 4
         self.audio_recorded_flags = [False] * self.MAX_CHANNELS  # Flags to indicate audio recorded
 
@@ -32,23 +32,24 @@ class AudioRecorderApp:
         self.recording_states = [False] * self.MAX_CHANNELS
         self.selected_device_indices = [None] * self.MAX_CHANNELS
 
-        #self.device_vars = [i for i in range(1, self.MAX_CHANNELS+1)]
         self.device_vars = [i for i in range(self.MAX_CHANNELS)]
         self.active_recordings = {}  # Dictionary to track active recordings by device name
-        self.device_name_to_index = {}
         self.index_to_device_name = {}
+        self.device_name_to_index_and_rate = {}
         self.active_streams = {}  # Dictionary to track active streams by device name
+
 
         for i in range(self.num_input_devices):
             device_info = self.p.get_device_info_by_index(i)
             device_name = device_info['name']
-            self.device_name_to_index[device_name] = i
+            sample_rate = int(device_info["defaultSampleRate"])
+            self.device_name_to_index_and_rate[device_name] = {"index": i, "sample_rate": sample_rate}
             self.index_to_device_name[i] = device_name
 
         self.tkinter = False
 
     def start_recording(self, channel, device_name, channels):
-        if device_name not in self.device_name_to_index:
+        if device_name not in self.device_name_to_index_and_rate:
             raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
 
         if len(self.active_recordings) >= self.MAX_CHANNELS:
@@ -56,23 +57,19 @@ class AudioRecorderApp:
 
         if device_name in self.active_recordings:
             raise DeviceAlreadyRecordingError(f"Device '{device_name}' on channel {channel} is already being recorded.")
-        
-
-
-       #for i in range(self.num_input_devices):
-       #    device_info = self.p.get_device_info_by_index(i)
-       #    if device_info['name'] == device_name:
-       #        self.selected_device_indices[channel] = i
-       #        break
        
         ## Setting the Device Names Index
-        self.selected_device_indices[channel] = self.device_name_to_index[device_name]
+        #  self.selected_device_indices[channel] = self.device_name_to_index[device_name]
+        device_info = self.device_name_to_index_and_rate[device_name]
+        self.selected_device_indices[channel] = device_info['index']
+        sample_rate = device_info['sample_rate']
+
         
         self.recording_states[channel] = True
         self.audio_buffers[channel].clear()
         stream = self.p.open(format=self.FORMAT,
                              channels=channels,
-                             rate=self.RATE,
+                             rate=sample_rate,
                              input=True,
                              input_device_index=self.selected_device_indices[channel],
                              frames_per_buffer=self.CHUNK,
@@ -80,7 +77,7 @@ class AudioRecorderApp:
 
         self.active_streams[device_name] = stream
         self.active_recordings[device_name] = channel
-    #    self.update_button_states()
+        #self.update_button_states()
         return self.active_recordings
         
 
@@ -94,7 +91,7 @@ class AudioRecorderApp:
         if device_name is None or device_name == "None":
             raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
         
-        if device_name not in self.device_name_to_index:
+        if device_name not in self.device_name_to_index_and_rate:
             raise DeviceNotFoundError(f"Device '{device_name}' not found in available devices.")
 
         if device_name in self.active_recordings:
@@ -124,10 +121,13 @@ class AudioRecorderApp:
             print(f"Device '{device_name}' is not being recorded.")
             return
 
+        device_info = self.device_name_to_index_and_rate[device_name]
+        sample_rate = device_info['sample_rate']
+
         channel = self.active_recordings[device_name]
         if self.audio_buffers[channel]:
-            audio_data = np.array(list(self.audio_buffers[channel]))[-int(self.RATE * duration):]
-            wavfile.write(filename +".wav", self.RATE, audio_data)
+            audio_data = np.array(list(self.audio_buffers[channel]))[-int(sample_rate * duration):]
+            wavfile.write(filename +".wav", sample_rate, audio_data)
         else:
             print(f"No recorded audio for Device '{device_name}' on Channel {channel} to save.")
 
