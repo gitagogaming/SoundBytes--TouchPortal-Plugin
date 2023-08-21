@@ -101,8 +101,14 @@ class ClientInterface(TouchPortalAPI.Client):
         if action_id == f"{PLUGIN_ID}.act.start_recording":
             deviceName = action_data[1]['value']
             chanNum = action_data[0]['value']
+            channels = action_data[2]['value']
+            if channels == "mono":
+                channels = 1
+            elif channels == "stereo":
+                channels = 2
+
             try:
-                response = soundRecorder.start_recording(int(chanNum), deviceName)
+                response = soundRecorder.start_recording(int(chanNum), deviceName, channels)
                 if response is not None:
                     if deviceName in response:
                         device_channel = response[deviceName]
